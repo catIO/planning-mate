@@ -9,6 +9,7 @@ interface WeeklyCalendarProps {
   onAddPieceToDay: (dayIndex: number, piece: MusicalPiece) => void;
   onRemovePieceFromDay: (dayIndex: number, pieceId: string) => void;
   onMovePiece: (fromDay: number, toDay: number, piece: MusicalPiece) => void;
+  onUpdateSchedule: (dayIndex: number, items: MusicalPiece[]) => void;
 }
 
 export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
@@ -17,7 +18,8 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   settings,
   onAddPieceToDay,
   onRemovePieceFromDay,
-  onMovePiece
+  onMovePiece,
+  onUpdateSchedule
 }) => {
   console.log('WeeklyCalendar received pieces:', pieces);
   console.log('WeeklyCalendar received schedule:', schedule);
@@ -27,6 +29,8 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [draggedPiece, setDraggedPiece] = useState<{ piece: MusicalPiece; fromDay?: number } | null>(null);
   const [selectedDayForModal, setSelectedDayForModal] = useState<number | null>(null);
+  const [draggedScheduledItem, setDraggedScheduledItem] = useState<{ piece: MusicalPiece; index: number } | null>(null);
+  const [dragOverScheduledIndex, setDragOverScheduledIndex] = useState<number | null>(null);
   const dragOverDay = useRef<number | null>(null);
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -77,13 +81,87 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
     setSelectedDayForModal(null);
   };
 
+  // Functions for reordering scheduled items in modal
+  const handleScheduledDragStart = (e: React.DragEvent, piece: MusicalPiece, index: number) => {
+    setDraggedScheduledItem({ piece, index });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleScheduledDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverScheduledIndex(index);
+  };
+
+  const handleScheduledDragLeave = () => {
+    setDragOverScheduledIndex(null);
+  };
+
+  const handleScheduledDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDragOverScheduledIndex(null);
+    
+    if (!draggedScheduledItem || selectedDayForModal === null) return;
+
+    const currentItems = schedule[selectedDayForModal] || [];
+    const draggedIndex = draggedScheduledItem.index;
+    
+    if (draggedIndex === dropIndex) return;
+
+    // Create new array with reordered items
+    const newItems = [...currentItems];
+    const [draggedItem] = newItems.splice(draggedIndex, 1);
+    newItems.splice(dropIndex, 0, draggedItem);
+
+    // Update the schedule with reordered items
+    onUpdateSchedule(selectedDayForModal, newItems);
+    setDraggedScheduledItem(null);
+  };
+
+  // Functions for reordering scheduled items in modal
+  const handleScheduledDragStart = (e: React.DragEvent, piece: MusicalPiece, index: number) => {
+    setDraggedScheduledItem({ piece, index });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleScheduledDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverScheduledIndex(index);
+  };
+
+  const handleScheduledDragLeave = () => {
+    setDragOverScheduledIndex(null);
+  };
+
+  const handleScheduledDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDragOverScheduledIndex(null);
+    
+    if (!draggedScheduledItem || selectedDayForModal === null) return;
+
+    const currentItems = schedule[selectedDayForModal] || [];
+    const draggedIndex = draggedScheduledItem.index;
+    
+    if (draggedIndex === dropIndex) return;
+
+    // Create new array with reordered items
+    const newItems = [...currentItems];
+    const [draggedItem] = newItems.splice(draggedIndex, 1);
+    newItems.splice(dropIndex, 0, draggedItem);
+
+    // Update the schedule with reordered items
+    onUpdateSchedule(selectedDayForModal, newItems);
+    setDraggedScheduledItem(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-medium text-white">Weekly Schedule</h2>
-          <p className="text-gray-400">Plan your week with your items</p>
+          <p className="text-gray-400">Tempus fugit</p>
         </div>
       </div>
 
@@ -120,180 +198,4 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                 dragOverDay.current === dayIndex 
                   ? 'border-blue-400 bg-blue-900/20' 
                   : 'border-gray-700 hover:border-gray-600'
-              } ${isToday ? 'ring-2 ring-blue-500/50' : ''}`}
-              onDragOver={(e) => handleDragOver(e, dayIndex)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, dayIndex)}
-              onClick={() => openDayModal(dayIndex)}
-            >
-              <div className="p-4">
-                <div className="text-center mb-4">
-                  <h3 className={`font-medium ${isToday ? 'text-blue-400' : 'text-white'}`}>
-                    {dayNames[dayIndex]}
-                  </h3>
-                </div>
-                
-                <div className="space-y-2 min-h-[200px]">
-                  {dayPieces.map((piece, pieceIndex) => (
-                    <div
-                      key={`${piece.id}-${pieceIndex}`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, piece, dayIndex)}
-                      className="group relative px-3 py-2 rounded-lg text-sm font-medium text-white cursor-move hover:shadow-md transition-all duration-200"
-                      style={{ backgroundColor: piece.color }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{piece.title}</span>
-                        <button
-                          onClick={() => onRemovePieceFromDay(dayIndex, piece.id)}
-                          className="opacity-0 group-hover:opacity-100 ml-2 text-white hover:text-red-200 transition-all"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                      {piece.composer && (
-                        <div className="text-xs opacity-75 truncate mt-1">
-                          {piece.composer}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {dayPieces.length === 0 && (
-                    <div className="text-center py-8 text-gray-600">
-                      <div className="text-sm">Drop items here</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {pieces.length === 0 && (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="text-gray-600 mb-4">
-            <Plus className="w-12 h-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-white mb-2">No items to schedule</h3>
-          <p className="text-gray-400">Add some items in the Items tab first</p>
-        </div>
-      )}
-
-      {/* Day Modal */}
-      {selectedDayForModal !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-medium text-white">
-                  {dayNames[selectedDayForModal]}
-                </h3>
-                <button
-                  onClick={closeDayModal}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {schedule[selectedDayForModal] && schedule[selectedDayForModal].length > 0 ? (
-                <div className="space-y-3">
-                  {schedule[selectedDayForModal].map((piece, pieceIndex) => (
-                    <div
-                      key={`${piece.id}-${pieceIndex}`}
-                      className="flex items-center justify-between p-4 rounded-lg text-white"
-                      style={{ backgroundColor: piece.color }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-lg truncate">
-                          {piece.title}
-                        </div>
-                        {piece.composer && (
-                          <div className="text-sm opacity-75 mt-1">
-                            {piece.composer}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemovePieceFromDay(selectedDayForModal, piece.id);
-                        }}
-                        className="ml-4 text-white hover:text-red-200 transition-colors"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-400">
-                  <div className="text-lg font-medium mb-2">No items scheduled</div>
-                  <div className="text-sm">Drag items from the available items above to schedule them for this day.</div>
-                </div>
-              )}
-              {/* Available Items Section */}
-              {pieces.length > 0 && (
-                <div className="border-t border-gray-700 pt-6">
-                  <h4 className="text-lg font-medium text-white mb-4">Available Items</h4>
-                  <div className="space-y-2">
-                    {pieces.map((piece) => {
-                      const isAlreadyScheduled = schedule[selectedDayForModal]?.some(
-                        scheduledPiece => scheduledPiece.id === piece.id
-                      );
-                      
-                      return (
-                        <button
-                          key={piece.id}
-                          onClick={() => {
-                            if (!isAlreadyScheduled) {
-                              onAddPieceToDay(selectedDayForModal, piece);
-                            }
-                          }}
-                          disabled={isAlreadyScheduled}
-                          className={`w-full flex items-center space-x-3 p-2 rounded text-left transition-colors ${
-                            isAlreadyScheduled
-                              ? 'opacity-50 cursor-not-allowed text-gray-500'
-                              : 'hover:bg-gray-700 cursor-pointer text-white'
-                          }`}
-                        >
-                          <div 
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: piece.color }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">
-                              {piece.title}
-                            </div>
-                            {piece.composer && (
-                              <div className={`text-sm truncate ${
-                                isAlreadyScheduled ? 'text-gray-500' : 'text-gray-400'
-                              }`}>
-                                {piece.composer}
-                              </div>
-                            )}
-                          </div>
-                          {isAlreadyScheduled && (
-                            <span className="text-xs text-gray-500 flex-shrink-0">
-                              ✓
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+              } ${isToday ? 'ring-2 ring-blue-500/50' : ''}`
