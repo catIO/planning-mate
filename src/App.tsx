@@ -444,7 +444,7 @@ function App() {
         {/* Piece Manager Modal */}
         {isPieceManagerOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-xl font-medium text-white">Manage Items</h2>
                 <button
@@ -455,7 +455,7 @@ function App() {
                 </button>
               </div>
               
-              <div className="p-6 overflow-y-auto max-h-[70vh]">
+              <div className="p-6 overflow-y-auto max-h-[80vh]">
                 <PieceManager 
                   pieces={pieces} 
                   onAddPiece={addPiece} 
