@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Palette } from 'lucide-react';
+import { MaterialIcon } from './MaterialIcon';
 import { AppSettings } from '../App';
 
 interface SettingsPanelProps {
@@ -26,7 +26,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <h3 className="text-lg font-medium text-white mb-4">Week Start Day</h3>
           <p className="text-sm text-gray-400 mb-4">Choose which day your practice week begins</p>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <button
               onClick={() => handleStartDayChange(0)}
               className={`p-4 rounded-lg border-2 transition-all ${
@@ -38,7 +38,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <div className="flex items-center space-x-2">
                 <div className="font-medium">Sunday</div>
               </div>
-              <div className="text-sm opacity-75 mt-1">Traditional weekend start</div>
             </button>
             
             <button
@@ -52,7 +51,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <div className="flex items-center space-x-2">
                 <div className="font-medium">Monday</div>
               </div>
-              <div className="text-sm opacity-75 mt-1">Work week start</div>
+            </button>
+
+            <button
+              onClick={() => handleStartDayChange(-1)}
+              className={`p-4 rounded-lg border-2 transition-all ${
+                settings.startDay === -1
+                  ? 'border-blue-500 bg-blue-900/30 text-blue-400'
+                  : 'border-gray-600 hover:border-gray-500 text-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <div className="font-medium">Current Day ({['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]})</div>
+              </div>
             </button>
           </div>
         </div>
@@ -64,21 +75,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <h3 className="text-lg font-medium text-white mb-4">About</h3>
           <div className="space-y-3 text-sm text-gray-400">
             <div className="flex items-center space-x-2">
-              <Palette className="w-4 h-4" />
+              <MaterialIcon icon="palette" size={16} />
               <span>Planning Mate PWA</span>
             </div>
-            <p>A progressive web app for organizing your weekly planning schedule. Add items to your list and drag them onto your calendar to plan your week.</p>
-            
-            <div className="pt-3 border-t border-gray-700">
-              <h4 className="font-medium text-white mb-2">Features:</h4>
-              <ul className="space-y-1 text-gray-400">
-                <li>• Drag and drop scheduling</li>
-                <li>• Color-coded items</li>
-                <li>• Customizable week start day</li>
-                <li>• Offline support (PWA)</li>
-                <li>• Local data storage</li>
-              </ul>
-            </div>
+            <p>This progressive web app lets you organize your weekly practice plan. Add items to your list and drag them onto your calendar to plan your week.</p>
+
           </div>
         </div>
 

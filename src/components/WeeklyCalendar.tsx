@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, X } from 'lucide-react';
+import { MaterialIcon } from './MaterialIcon';
 import { MusicalPiece, DaySchedule, AppSettings } from '../App';
 
 interface WeeklyCalendarProps {
@@ -38,8 +38,12 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Fixed week days - always show Monday through Sunday
-  const weekDays = [1, 2, 3, 4, 5, 6, 0]; // Monday = 1, Sunday = 0
+  // Dynamic week days based on settings
+  const weekDays = [];
+  const startDay = settings.startDay === -1 ? new Date().getDay() : settings.startDay;
+  for (let i = 0; i < 7; i++) {
+    weekDays.push((startDay + i) % 7);
+  }
 
   const handleDragStart = (e: React.DragEvent, piece: MusicalPiece, fromDay?: number) => {
     setDraggedPiece({ piece, fromDay });
@@ -241,8 +245,14 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 
       {/* Day Modal */}
       {selectedDayForModal !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={closeDayModal}
+        >
+          <div 
+            className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h3 className="text-lg font-medium text-white">
                 {dayNames[selectedDayForModal]}
@@ -251,7 +261,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                 onClick={closeDayModal}
                 className="text-gray-400 hover:text-white transition-colors"
               >
-                <X className="w-5 h-5" />
+                <MaterialIcon icon="close" size={20} />
               </button>
             </div>
             
@@ -292,7 +302,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                           }}
                           className="text-white/70 hover:text-white transition-colors"
                         >
-                          <X className="w-4 h-4" />
+                          <MaterialIcon icon="close" size={16} />
                         </button>
                       </div>
                     </div>

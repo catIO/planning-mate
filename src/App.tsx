@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Music, Calendar, Settings, X } from 'lucide-react';
+import { MaterialIcon } from './components/MaterialIcon';
 import { PieceManager } from './components/PieceManager';
 import { WeeklyCalendar } from './components/WeeklyCalendar';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -16,7 +16,7 @@ export interface DaySchedule {
 }
 
 export interface AppSettings {
-  startDay: number; // 0 = Sunday, 1 = Monday
+  startDay: number; // 0 = Sunday, 1 = Monday, 2 = Tuesday, etc., -1 = Current Day
   weekFormat: '7-day' | '5-day';
 }
 
@@ -389,9 +389,9 @@ function App() {
         <div className="fixed top-4 right-4 z-40">
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700"
+            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700 flex items-center justify-center"
           >
-            <Settings className="w-5 h-5" />
+            <MaterialIcon icon="settings" size={20} />
           </button>
         </div>
 
@@ -426,7 +426,7 @@ function App() {
                   onClick={() => setIsSettingsOpen(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <MaterialIcon icon="close" size={20} />
                 </button>
               </div>
               
@@ -451,7 +451,7 @@ function App() {
                   onClick={() => setIsPieceManagerOpen(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <MaterialIcon icon="close" size={20} />
                 </button>
               </div>
               

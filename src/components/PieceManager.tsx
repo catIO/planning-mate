@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit3, Music2 } from 'lucide-react';
+import { MaterialIcon } from './MaterialIcon';
 import { MusicalPiece } from '../App';
 
 interface PieceManagerProps {
@@ -125,9 +125,9 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
         <h2 className="text-xl font-medium text-white">Your Items</h2>
         <button
           onClick={() => setIsAddingPiece(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:shadow-xl"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:shadow-xl flex items-center justify-center"
         >
-          <Plus className="w-6 h-6" />
+          <MaterialIcon icon="add" size={24} />
         </button>
       </div>
 
@@ -292,13 +292,13 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                         onClick={() => startEditing(piece)}
                         className="text-gray-500 hover:text-blue-400 transition-colors"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <MaterialIcon icon="edit" size={16} />
                       </button>
                       <button
                         onClick={() => onDeletePiece(piece.id)}
                         className="text-gray-500 hover:text-red-400 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <MaterialIcon icon="delete" size={16} />
                       </button>
                     </div>
                   </div>
@@ -319,14 +319,14 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
         </div>
       ) : (
         <div className="text-center py-12">
-          <Music2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <MaterialIcon icon="music_note" size={48} className="text-gray-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">No items added yet</h3>
           <p className="text-gray-400 mb-6">Start by adding your first item to practice</p>
           <button
             onClick={() => setIsAddingPiece(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <MaterialIcon icon="add" size={16} className="mr-2 flex-shrink-0" />
             Add Your First Item
           </button>
         </div>
