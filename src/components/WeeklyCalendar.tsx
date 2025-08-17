@@ -229,7 +229,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                   
                   {dayPieces.length === 0 && (
                     <div className="text-xs text-gray-500 italic">
-                      No items scheduled
+                      Practice!
                     </div>
                   )}
                 </div>
