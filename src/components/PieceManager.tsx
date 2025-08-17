@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit3, Music2 } from 'lucide-react';
 import { MusicalPiece } from '../App';
 
@@ -16,6 +16,24 @@ const PIECE_COLORS = [
   '#ec4899', '#f43f5e'
 ];
 
+const getLastUsedColor = (): string => {
+  try {
+    const saved = localStorage.getItem('planningMate_lastUsedColor');
+    return saved && PIECE_COLORS.includes(saved) ? saved : PIECE_COLORS[0];
+  } catch (error) {
+    console.error('Failed to load last used color:', error);
+    return PIECE_COLORS[0];
+  }
+};
+
+const saveLastUsedColor = (color: string): void => {
+  try {
+    localStorage.setItem('planningMate_lastUsedColor', color);
+  } catch (error) {
+    console.error('Failed to save last used color:', error);
+  }
+};
+
 export const PieceManager: React.FC<PieceManagerProps> = ({
   pieces,
   onAddPiece,
@@ -29,10 +47,15 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   const [editingPieceId, setEditingPieceId] = useState<string | null>(null);
   const [newPieceTitle, setNewPieceTitle] = useState('');
   const [newPieceComposer, setNewPieceComposer] = useState('');
-  const [selectedColor, setSelectedColor] = useState(PIECE_COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState(getLastUsedColor);
   const [editTitle, setEditTitle] = useState('');
   const [editComposer, setEditComposer] = useState('');
   const [editColor, setEditColor] = useState('');
+
+  // Load last used color on component mount
+  useEffect(() => {
+    setSelectedColor(getLastUsedColor());
+  }, []);
 
   const handleAddPiece = () => {
     if (newPieceTitle.trim()) {
@@ -44,9 +67,10 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
       };
       
       onAddPiece(newPiece);
+      saveLastUsedColor(selectedColor); // Save the color for next time
       setNewPieceTitle('');
       setNewPieceComposer('');
-      setSelectedColor(PIECE_COLORS[Math.floor(Math.random() * PIECE_COLORS.length)]);
+      // Keep the same color selected for the next piece
       setIsAddingPiece(false);
     }
   };
@@ -150,7 +174,10 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                 {PIECE_COLORS.map((color) => (
                   <button
                     key={color}
-                    onClick={() => setSelectedColor(color)}
+                    onClick={() => {
+                      setSelectedColor(color);
+                      saveLastUsedColor(color); // Save color when user selects it
+                    }}
                     className={`w-8 h-8 rounded-full border-2 transition-all ${
                       selectedColor === color 
                         ? 'border-white scale-110' 
@@ -176,6 +203,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                 setIsAddingPiece(false);
                 setNewPieceTitle('');
                 setNewPieceComposer('');
+                setSelectedColor(getLastUsedColor()); // Reset to last used color
               }}
               className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
             >

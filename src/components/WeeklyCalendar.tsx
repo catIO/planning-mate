@@ -238,6 +238,58 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                   <div className="text-sm">Drag items from the available items above to schedule them for this day.</div>
                 </div>
               )}
+              {/* Available Items Section */}
+              {pieces.length > 0 && (
+                <div className="border-t border-gray-700 pt-6">
+                  <h4 className="text-lg font-medium text-white mb-4">Available Items</h4>
+                  <div className="space-y-2">
+                    {pieces.map((piece) => {
+                      const isAlreadyScheduled = schedule[selectedDayForModal]?.some(
+                        scheduledPiece => scheduledPiece.id === piece.id
+                      );
+                      
+                      return (
+                        <button
+                          key={piece.id}
+                          onClick={() => {
+                            if (!isAlreadyScheduled) {
+                              onAddPieceToDay(selectedDayForModal, piece);
+                            }
+                          }}
+                          disabled={isAlreadyScheduled}
+                          className={`w-full flex items-center space-x-3 p-2 rounded text-left transition-colors ${
+                            isAlreadyScheduled
+                              ? 'opacity-50 cursor-not-allowed text-gray-500'
+                              : 'hover:bg-gray-700 cursor-pointer text-white'
+                          }`}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: piece.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {piece.title}
+                            </div>
+                            {piece.composer && (
+                              <div className={`text-sm truncate ${
+                                isAlreadyScheduled ? 'text-gray-500' : 'text-gray-400'
+                              }`}>
+                                {piece.composer}
+                              </div>
+                            )}
+                          </div>
+                          {isAlreadyScheduled && (
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
