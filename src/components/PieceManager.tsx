@@ -122,7 +122,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-medium text-white">Your Items</h2>
+        <h2 className="text-xl font-medium text-white">Your Items</h2>
         <button
           onClick={() => setIsAddingPiece(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:shadow-xl"

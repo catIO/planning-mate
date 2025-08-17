@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, Palette } from 'lucide-react';
+import { Calendar, Palette } from 'lucide-react';
 import { AppSettings } from '../App';
 
 interface SettingsPanelProps {
@@ -17,16 +17,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     onUpdateSettings({ ...settings, startDay });
   };
 
-  const handleWeekFormatChange = (weekFormat: '7-day' | '5-day') => {
-    onUpdateSettings({ ...settings, weekFormat });
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <Calendar className="w-6 h-6 text-gray-400" />
-        <h2 className="text-2xl font-medium text-white">Settings</h2>
-      </div>
 
       <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 divide-y divide-gray-700">
         {/* Week Start Day */}
@@ -65,48 +57,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </div>
         </div>
 
-        {/* Week Format */}
-        <div className="p-6">
-          <h3 className="text-lg font-medium text-white mb-4">Week Format</h3>
-          <p className="text-sm text-gray-400 mb-4">Choose how many days to display in your calendar</p>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleWeekFormatChange('7-day')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                settings.weekFormat === '7-day'
-                  ? 'border-blue-500 bg-blue-900/30 text-blue-400'
-                  : 'border-gray-600 hover:border-gray-500 text-gray-300'
-              }`}
-            >
-              <div className="font-medium">7-Day Week</div>
-              <div className="text-sm opacity-75 mt-1">Include weekends</div>
-            </button>
-            
-            <button
-              onClick={() => handleWeekFormatChange('5-day')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                settings.weekFormat === '5-day'
-                  ? 'border-blue-500 bg-blue-900/30 text-blue-400'
-                  : 'border-gray-600 hover:border-gray-500 text-gray-300'
-              }`}
-            >
-              <div className="font-medium">5-Day Week</div>
-              <div className="text-sm opacity-75 mt-1">Weekdays only</div>
-            </button>
-          </div>
-          
-          {settings.weekFormat === '5-day' && (
-            <div className="mt-4 p-3 bg-amber-900/20 border border-amber-700 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <Clock className="w-4 h-4 text-amber-400 mt-0.5" />
-                <div className="text-sm text-amber-300">
-                  <strong>Note:</strong> 5-day week format will only show weekdays (Monday-Friday) in your calendar view.
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+
 
         {/* App Info */}
         <div className="p-6">

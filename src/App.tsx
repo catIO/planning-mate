@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Music, Calendar, Settings } from 'lucide-react';
+import { Plus, Music, Calendar, Settings, X } from 'lucide-react';
 import { PieceManager } from './components/PieceManager';
 import { WeeklyCalendar } from './components/WeeklyCalendar';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -67,8 +67,9 @@ function App() {
     startDay: 1, // Monday
     weekFormat: '7-day'
   });
-  const [activeTab, setActiveTab] = useState<'pieces' | 'calendar' | 'settings'>('calendar');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPieceManagerOpen, setIsPieceManagerOpen] = useState(false);
 
   // Test localStorage on component mount
   useEffect(() => {
@@ -379,83 +380,92 @@ function App() {
     console.log('- window.addTestData()');
   }, []);
 
-  const tabs = [
-    { id: 'pieces', label: 'Pieces', icon: Music },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'settings', label: 'Settings', icon: Settings }
-  ];
+
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-900 font-['Roboto']">
-        {/* Header */}
-        <header className="bg-gray-800 shadow-sm border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Music className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-xl font-medium text-white">Planning Mate</h1>
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black font-['Roboto']">
+        {/* Settings Button */}
+        <div className="fixed top-4 right-4 z-40">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
+
+
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-6">
+          <WeeklyCalendar
+            pieces={pieces}
+            schedule={schedule}
+            settings={settings}
+            onAddPieceToDay={addPieceToDay}
+            onRemovePieceFromDay={removePieceFromDay}
+            onMovePiece={movePiece}
+            onUpdateSchedule={(dayIndex, items) => {
+              setSchedule(prev => ({
+                ...prev,
+                [dayIndex]: items
+              }));
+            }}
+            onOpenPieceManager={() => setIsPieceManagerOpen(true)}
+          />
+        </main>
+
+        {/* Settings Modal */}
+        {isSettingsOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                <h2 className="text-xl font-medium text-white">Settings</h2>
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                <SettingsPanel
+                  settings={settings}
+                  onUpdateSettings={setSettings}
+                  onClearOldData={clearOldData}
+                />
               </div>
             </div>
           </div>
-        </header>
+        )}
 
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 z-50">
-          <div className="flex justify-around py-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
+        {/* Piece Manager Modal */}
+        {isPieceManagerOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                <h2 className="text-xl font-medium text-white">Manage Items</h2>
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'text-blue-400 bg-blue-900/30' 
-                      : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
-                  }`}
+                  onClick={() => setIsPieceManagerOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
-                  <Icon className="w-5 h-5 mb-1" />
-                  <span className="text-xs font-medium">{tab.label}</span>
+                  <X className="w-5 h-5" />
                 </button>
-              );
-            })}
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                <PieceManager 
+                  pieces={pieces} 
+                  onAddPiece={addPiece} 
+                  onDeletePiece={deletePiece}
+                  onUpdatePiece={updatePiece}
+                />
+              </div>
+            </div>
           </div>
-        </nav>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 pt-6">
-          {activeTab === 'pieces' && (
-            <PieceManager 
-              pieces={pieces} 
-              onAddPiece={addPiece} 
-              onDeletePiece={deletePiece}
-              onUpdatePiece={updatePiece}
-            />
-          )}
-          
-          {activeTab === 'calendar' && (
-            <WeeklyCalendar
-              pieces={pieces}
-              schedule={schedule}
-              settings={settings}
-              onAddPieceToDay={addPieceToDay}
-              onRemovePieceFromDay={removePieceFromDay}
-              onMovePiece={movePiece}
-            />
-          )}
-          
-          {activeTab === 'settings' && (
-            <SettingsPanel
-              settings={settings}
-              onUpdateSettings={setSettings}
-              onClearOldData={clearOldData}
-            />
-          )}
-        </main>
+        )}
       </div>
     </ErrorBoundary>
   );
