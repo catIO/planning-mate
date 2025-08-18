@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MaterialIcon } from './MaterialIcon';
 import { AppSettings } from '../App';
-import QRCode from 'qrcode';
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -20,39 +19,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   schedule,
   onImportData
 }) => {
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-  const [showQRCode, setShowQRCode] = useState(false);
   const [showCopyData, setShowCopyData] = useState(false);
   const [copyDataText, setCopyDataText] = useState<string>('');
   const [importError, setImportError] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
-  const generateQRCode = async () => {
-    try {
-      const data = {
-        pieces,
-        schedule,
-        settings,
-        exportDate: new Date().toISOString()
-      };
-      
-      const jsonString = JSON.stringify(data);
-      const qrDataUrl = await QRCode.toDataURL(jsonString, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-      
-      setQrCodeDataUrl(qrDataUrl);
-      setShowQRCode(true);
-      setImportError('');
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-    }
-  };
+
 
   const generateCopyData = () => {
     const data = {
@@ -202,39 +174,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <p className="text-sm text-gray-400 mb-4">Export and import your data across devices</p>
           
           <div className="space-y-4">
-            {/* QR Code Export */}
-            <div>
-              <h4 className="text-sm font-medium text-white mb-2">Export Data</h4>
-              <button
-                onClick={generateQRCode}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
-              >
-                <MaterialIcon icon="qr_code" size={16} />
-                <span>Generate QR Code</span>
-              </button>
-              <p className="text-xs text-gray-500 mt-1">
-                Generate a QR code to transfer data to another device.
-              </p>
-            </div>
-
-            {/* QR Code Display */}
-            {showQRCode && qrCodeDataUrl && (
-              <div className="bg-white p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-gray-800">Scan this QR code</h4>
-                  <button
-                    onClick={() => setShowQRCode(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <MaterialIcon icon="close" size={16} />
-                  </button>
-                </div>
-                <img src={qrCodeDataUrl} alt="QR Code" className="w-full max-w-xs mx-auto" />
-                <p className="text-xs text-gray-600 mt-2 text-center">
-                  Use your phone's camera to scan this code
-                </p>
-              </div>
-            )}
 
             {/* Copy Data Export */}
             <div>
@@ -286,7 +225,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* Paste Data Import */}
             <div>
               <h4 className="text-sm font-medium text-white mb-2">Import Data</h4>
-              <div className="space-y-2">
+              <div className="flex space-x-2">
                 <button
                   onClick={handlePasteImport}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2"
