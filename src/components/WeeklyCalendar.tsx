@@ -162,32 +162,44 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
       </div>
 
       {/* Available Pieces */}
-              <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 cursor-pointer hover:bg-gray-750 transition-colors" onClick={onOpenPieceManager}>
+                      <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 cursor-pointer hover:bg-gray-750 transition-colors" onClick={onOpenPieceManager}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-gray-300">Repertoire (drag to schedule)</h3>
             <div className="text-xs text-gray-500">Click to manage</div>
           </div>
-        <div className="flex flex-wrap gap-2">
-          {pieces.length > 0 ? (
-            pieces.map((piece) => (
-              <div
-                key={piece.id}
-                draggable
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  handleDragStart(e, piece);
-                }}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white cursor-move hover:shadow-md transition-all duration-200 hover:scale-105"
-                style={{ backgroundColor: piece.color }}
-              >
-                {piece.title}
-              </div>
-            ))
-          ) : (
-            <div className="text-sm text-gray-500 italic">No items added yet</div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {pieces.length > 0 ? (
+              pieces.map((piece) => {
+                // Calculate how many times this piece appears in the schedule
+                const usageCount = Object.values(schedule).reduce((total, dayPieces) => {
+                  return total + dayPieces.filter((p: MusicalPiece) => p.id === piece.id).length;
+                }, 0);
+                
+                return (
+                  <div
+                    key={piece.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      handleDragStart(e, piece);
+                    }}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white cursor-move hover:shadow-md transition-all duration-200 hover:scale-105 relative"
+                    style={{ backgroundColor: piece.color }}
+                  >
+                    {piece.title}
+                    {usageCount > 0 && (
+                      <span className="ml-2 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                        {usageCount}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-sm text-gray-500 italic">No items added yet</div>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
