@@ -318,6 +318,13 @@ function App() {
     alert('Old data cleared! Please refresh the page.');
   };
 
+  const handleImportData = (data: { pieces: any[]; schedule: any; settings: AppSettings }) => {
+    setPieces(data.pieces);
+    setSchedule(data.schedule);
+    setSettings(data.settings);
+    alert('Data imported successfully!');
+  };
+
   // Manual data loading function for debugging
   const manualLoadData = () => {
     console.log('=== MANUAL DATA LOAD ===');
@@ -435,6 +442,9 @@ function App() {
                   settings={settings}
                   onUpdateSettings={setSettings}
                   onClearOldData={clearOldData}
+                  pieces={pieces}
+                  schedule={schedule}
+                  onImportData={handleImportData}
                 />
               </div>
             </div>
