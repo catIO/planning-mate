@@ -70,6 +70,7 @@ function App() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPieceManagerOpen, setIsPieceManagerOpen] = useState(false);
+  const [openPieceManagerWithAddForm, setOpenPieceManagerWithAddForm] = useState(false);
 
   // Test localStorage on component mount
   useEffect(() => {
@@ -392,14 +393,30 @@ function App() {
   return (
     <ErrorBoundary>
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black font-['Roboto']">
-        {/* Settings Button */}
-        <div className="fixed top-4 right-4 z-40">
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700 flex items-center justify-center"
-          >
-            <MaterialIcon icon="settings" size={20} />
-          </button>
+        {/* Settings and Repertoire Buttons */}
+        <div className="fixed top-4 right-4 z-40 flex space-x-2">
+          <div className="relative group">
+            <button
+              onClick={() => setIsPieceManagerOpen(true)}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700 flex items-center justify-center"
+            >
+              <MaterialIcon icon="library_music" size={20} />
+            </button>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+              Manage Repertoire
+            </div>
+          </div>
+          <div className="relative group">
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700 flex items-center justify-center"
+            >
+              <MaterialIcon icon="settings" size={20} />
+            </button>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+              Settings
+            </div>
+          </div>
         </div>
 
 
@@ -420,6 +437,10 @@ function App() {
               }));
             }}
             onOpenPieceManager={() => setIsPieceManagerOpen(true)}
+            onOpenPieceManagerWithAddForm={() => {
+              setOpenPieceManagerWithAddForm(true);
+              setIsPieceManagerOpen(true);
+            }}
           />
         </main>
 
@@ -453,12 +474,27 @@ function App() {
 
         {/* Piece Manager Modal */}
         {isPieceManagerOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => {
+              setIsPieceManagerOpen(false);
+              setOpenPieceManagerWithAddForm(false);
+            }}
+          >
+            <div 
+              className="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                <h2 className="text-xl font-medium text-white">Manage Items</h2>
+                <div className="flex items-center space-x-3">
+                  <MaterialIcon icon="library_music" size={24} className="text-blue-400" />
+                  <h2 className="text-xl font-medium text-white">Manage Repertoire</h2>
+                </div>
                 <button
-                  onClick={() => setIsPieceManagerOpen(false)}
+                  onClick={() => {
+                    setIsPieceManagerOpen(false);
+                    setOpenPieceManagerWithAddForm(false);
+                  }}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <MaterialIcon icon="close" size={20} />
@@ -471,6 +507,7 @@ function App() {
                   onAddPiece={addPiece} 
                   onDeletePiece={deletePiece}
                   onUpdatePiece={updatePiece}
+                  openWithAddForm={openPieceManagerWithAddForm}
                 />
               </div>
             </div>

@@ -7,6 +7,7 @@ interface PieceManagerProps {
   onAddPiece: (piece: MusicalPiece) => void;
   onDeletePiece: (pieceId: string) => void;
   onUpdatePiece: (pieceId: string, updatedPiece: Partial<MusicalPiece>) => void;
+  openWithAddForm?: boolean;
 }
 
 const PIECE_COLORS = [
@@ -38,12 +39,13 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   pieces,
   onAddPiece,
   onDeletePiece,
-  onUpdatePiece
+  onUpdatePiece,
+  openWithAddForm = false
 }) => {
   console.log('PieceManager received pieces:', pieces);
   console.log('PieceManager pieces length:', pieces.length);
   
-  const [isAddingPiece, setIsAddingPiece] = useState(false);
+  const [isAddingPiece, setIsAddingPiece] = useState(openWithAddForm);
   const [editingPieceId, setEditingPieceId] = useState<string | null>(null);
   const [newPieceTitle, setNewPieceTitle] = useState('');
   const [newPieceComposer, setNewPieceComposer] = useState('');
@@ -122,7 +124,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-medium text-white">Your Items</h2>
+        <h2 className="text-lg font-normal text-white">Manage your repertoire or technical exercises</h2>
         <button
           onClick={() => setIsAddingPiece(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:shadow-xl flex items-center justify-center"
@@ -319,16 +321,24 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
         </div>
       ) : (
         <div className="text-center py-12">
-          <MaterialIcon icon="music_note" size={48} className="text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No items added yet</h3>
-          <p className="text-gray-400 mb-6">Start by adding your first item to practice</p>
-          <button
-            onClick={() => setIsAddingPiece(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            <MaterialIcon icon="add" size={16} className="mr-2 flex-shrink-0" />
-            Add Your First Item
-          </button>
+          <MaterialIcon icon="library_music" size={48} className="text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">Your repertoire is empty</h3>
+          <p className="text-gray-400 mb-4 max-w-md mx-auto">
+            Add pieces, technical exercises, or practice items to your repertoire. 
+            You can then drag them to your weekly calendar to plan your practice sessions.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => setIsAddingPiece(true)}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl"
+            >
+              <MaterialIcon icon="add" size={20} className="mr-2 flex-shrink-0" />
+              Add Your First Item
+            </button>
+            <div className="text-xs text-gray-500">
+              💡 Tip: You can add pieces, exercises, scales, or any practice material
+            </div>
+          </div>
         </div>
       )}
     </div>

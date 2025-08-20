@@ -11,6 +11,7 @@ interface WeeklyCalendarProps {
   onMovePiece: (fromDay: number, toDay: number, piece: MusicalPiece) => void;
   onUpdateSchedule: (dayIndex: number, items: MusicalPiece[]) => void;
   onOpenPieceManager: () => void;
+  onOpenPieceManagerWithAddForm: () => void;
 }
 
 export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
@@ -21,7 +22,8 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   onRemovePieceFromDay,
   onMovePiece,
   onUpdateSchedule,
-  onOpenPieceManager
+  onOpenPieceManager,
+  onOpenPieceManagerWithAddForm
 }) => {
   console.log('WeeklyCalendar received pieces:', pieces);
   console.log('WeeklyCalendar received schedule:', schedule);
@@ -162,44 +164,62 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
       </div>
 
       {/* Available Pieces */}
-                      <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 cursor-pointer hover:bg-gray-750 transition-colors" onClick={onOpenPieceManager}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-300">Repertoire (drag to schedule)</h3>
-            <div className="text-xs text-gray-500">Click to manage</div>
+      {pieces.length > 0 ? (
+        <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 cursor-pointer hover:bg-gray-750 transition-colors" onClick={onOpenPieceManager}>
+          <div className="flex items-center justify-end mb-3">
+            <div className="text-xs text-gray-500">Click to manage, drag items to schedule</div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {pieces.length > 0 ? (
-              pieces.map((piece) => {
-                // Calculate how many times this piece appears in the schedule
-                const usageCount = Object.values(schedule).reduce((total, dayPieces) => {
-                  return total + dayPieces.filter((p: MusicalPiece) => p.id === piece.id).length;
-                }, 0);
-                
-                return (
-                  <div
-                    key={piece.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      handleDragStart(e, piece);
-                    }}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white cursor-move hover:shadow-md transition-all duration-200 hover:scale-105 relative"
-                    style={{ backgroundColor: piece.color }}
-                  >
-                    {piece.title}
-                    {usageCount > 0 && (
-                      <span className="ml-2 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                        {usageCount}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-sm text-gray-500 italic">No items added yet</div>
-            )}
+            {pieces.map((piece) => {
+              // Calculate how many times this piece appears in the schedule
+              const usageCount = Object.values(schedule).reduce((total, dayPieces) => {
+                return total + dayPieces.filter((p: MusicalPiece) => p.id === piece.id).length;
+              }, 0);
+              
+              return (
+                <div
+                  key={piece.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.stopPropagation();
+                    handleDragStart(e, piece);
+                  }}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white cursor-move hover:shadow-md transition-all duration-200 hover:scale-105 relative"
+                  style={{ backgroundColor: piece.color }}
+                >
+                  {piece.title}
+                  {usageCount > 0 && (
+                    <span className="ml-2 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                      {usageCount}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="text-center py-12 max-w-md">
+            <MaterialIcon icon="library_music" size={48} className="text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-3">Your repertoire is empty</h3>
+            <p className="text-gray-400 mb-6">
+              Add pieces, technical exercises, or practice items to your repertoire. 
+              You can then drag them to your weekly calendar to plan your practice sessions.
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenPieceManagerWithAddForm();
+              }}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl"
+            >
+              <MaterialIcon icon="add" size={20} className="mr-2 flex-shrink-0" />
+              Add Your First Item
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
