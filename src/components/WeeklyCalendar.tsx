@@ -30,7 +30,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   console.log('WeeklyCalendar pieces length:', pieces.length);
   console.log('WeeklyCalendar schedule keys:', Object.keys(schedule));
   
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [draggedPiece, setDraggedPiece] = useState<{ piece: MusicalPiece; fromDay?: number } | null>(null);
   const [selectedDayForModal, setSelectedDayForModal] = useState<number | null>(null);
   const [draggedScheduledItem, setDraggedScheduledItem] = useState<{ piece: MusicalPiece; index: number } | null>(null);
@@ -38,7 +37,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   const dragOverDay = useRef<number | null>(null);
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Dynamic week days based on settings
   const weekDays = [];
@@ -222,7 +220,12 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
       )}
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+      <div 
+        className="grid grid-cols-1 md:grid-cols-7 gap-4 weekly-calendar-grid"
+        style={{ 
+          '--today-grid-template': weekDays.map(dayIndex => dayIndex === new Date().getDay() ? '1.5fr' : '1fr').join(' ')
+        } as React.CSSProperties}
+      >
         {weekDays.map((dayIndex) => {
           const dayPieces = schedule[dayIndex] || [];
           const isToday = dayIndex === new Date().getDay();
@@ -246,17 +249,47 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                 </div>
                 
                 <div className="space-y-2">
-                  {dayPieces.map((piece, index) => (
-                    <div
-                      key={`${piece.id}-${index}`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, piece, dayIndex)}
-                      className="px-2 py-1 rounded text-xs font-medium text-white cursor-move hover:shadow-sm transition-all"
-                      style={{ backgroundColor: piece.color }}
-                    >
-                      {piece.title}
-                    </div>
-                  ))}
+                  {dayPieces.map((piece, index) => {
+                    const isItemToday = dayIndex === new Date().getDay();
+                    
+                    return (
+                      <div
+                        key={`${piece.id}-${index}`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, piece, dayIndex)}
+                        className={isItemToday 
+                          ? "relative pl-3 pr-2 py-2 rounded bg-gray-900/60 border border-gray-700/50 cursor-move hover:bg-gray-900/80 transition-all group shadow-sm"
+                          : "px-2 py-1 rounded text-xs font-medium text-white cursor-move hover:shadow-sm transition-all truncate"
+                        }
+                        style={isItemToday ? {} : { backgroundColor: piece.color }}
+                      >
+                        {isItemToday ? (
+                          <>
+                            {/* Color accent bar */}
+                            <div 
+                              className="absolute left-0 top-0 bottom-0 w-1 rounded-l transition-all group-hover:w-1.5" 
+                              style={{ backgroundColor: piece.color }}
+                            ></div>
+                            
+                            <div 
+                              className="text-base font-bold leading-tight"
+                              style={{ color: piece.color }}
+                            >
+                              {piece.title}
+                            </div>
+                            
+                            {piece.description && (
+                              <div className="text-sm text-gray-300 opacity-90 mt-1.5 line-clamp-3 leading-relaxed">
+                                {piece.description}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          piece.title
+                        )}
+                      </div>
+                    );
+                  })}
                   
                   {/* Drop indicator line */}
                   {dragOverDay.current === dayIndex && draggedPiece && (
@@ -315,16 +348,24 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                       onDragOver={(e) => handleScheduledDragOver(e, index)}
                       onDragLeave={handleScheduledDragLeave}
                       onDrop={(e) => handleScheduledDrop(e, index)}
-                      className={`p-3 rounded-lg cursor-move transition-all ${
-                        dragOverScheduledIndex === index ? 'bg-blue-900/20 border border-blue-400' : ''
+                      className={`relative pl-4 pr-3 py-3 rounded-lg cursor-move transition-all bg-gray-700/30 border ${
+                        dragOverScheduledIndex === index ? 'border-blue-400 bg-blue-900/20 shadow-lg' : 'border-gray-700 hover:border-gray-600'
                       }`}
-                      style={{ backgroundColor: piece.color }}
                     >
+                      {/* Color accent bar */}
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l" 
+                        style={{ backgroundColor: piece.color }}
+                      ></div>
+
                       <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-white">{piece.title}</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-base" style={{ color: piece.color }}>{piece.title}</div>
                           {piece.composer && (
-                            <div className="text-sm text-white/80">{piece.composer}</div>
+                            <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>
+                          )}
+                          {piece.description && (
+                            <div className="text-sm text-gray-300 mt-2 leading-relaxed">{piece.description}</div>
                           )}
                         </div>
                         <button
@@ -332,9 +373,9 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                             e.stopPropagation();
                             onRemovePieceFromDay(selectedDayForModal, piece.id);
                           }}
-                          className="text-white/70 hover:text-white transition-colors"
+                          className="ml-4 p-1 text-gray-500 hover:text-red-400 transition-colors rounded-full hover:bg-gray-800"
                         >
-                          <MaterialIcon icon="close" size={16} />
+                          <MaterialIcon icon="close" size={18} />
                         </button>
                       </div>
                     </div>
@@ -373,9 +414,14 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                       />
                       <div className="flex-1">
                         <div className="font-medium text-white">{piece.title}</div>
-                        {piece.composer && (
-                          <div className="text-sm text-gray-400">{piece.composer}</div>
-                        )}
+                        <div className="flex flex-col">
+                          {piece.composer && (
+                            <div className="text-xs text-blue-400">{piece.composer}</div>
+                          )}
+                          {piece.description && (
+                            <div className="text-sm text-gray-400">{piece.description}</div>
+                          )}
+                        </div>
                       </div>
                       <div className="text-gray-500 text-sm">+</div>
                     </button>

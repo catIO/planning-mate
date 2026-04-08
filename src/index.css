@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media (min-width: 768px) {
+  .weekly-calendar-grid {
+    grid-template-columns: var(--today-grid-template) !important;
+  }
+}

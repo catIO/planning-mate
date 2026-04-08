@@ -49,9 +49,11 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   const [editingPieceId, setEditingPieceId] = useState<string | null>(null);
   const [newPieceTitle, setNewPieceTitle] = useState('');
   const [newPieceComposer, setNewPieceComposer] = useState('');
+  const [newPieceDescription, setNewPieceDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(getLastUsedColor);
   const [editTitle, setEditTitle] = useState('');
   const [editComposer, setEditComposer] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editColor, setEditColor] = useState('');
 
   // Load last used color on component mount
@@ -65,13 +67,15 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
         id: Date.now().toString(),
         title: newPieceTitle.trim(),
         color: selectedColor,
-        composer: newPieceComposer.trim() || undefined
+        composer: newPieceComposer.trim() || undefined,
+        description: newPieceDescription.trim() || undefined
       };
       
       onAddPiece(newPiece);
       saveLastUsedColor(selectedColor); // Save the color for next time
       setNewPieceTitle('');
       setNewPieceComposer('');
+      setNewPieceDescription('');
       // Keep the same color selected for the next piece
       setIsAddingPiece(false);
     }
@@ -88,6 +92,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
     setEditingPieceId(piece.id);
     setEditTitle(piece.title);
     setEditComposer(piece.composer || '');
+    setEditDescription(piece.description || '');
     setEditColor(piece.color);
   };
 
@@ -96,11 +101,13 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
       onUpdatePiece(editingPieceId, {
         title: editTitle.trim(),
         composer: editComposer.trim() || undefined,
+        description: editDescription.trim() || undefined,
         color: editColor
       });
       setEditingPieceId(null);
       setEditTitle('');
       setEditComposer('');
+      setEditDescription('');
       setEditColor('');
     }
   };
@@ -109,6 +116,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
     setEditingPieceId(null);
     setEditTitle('');
     setEditComposer('');
+    setEditDescription('');
     setEditColor('');
   };
 
@@ -156,14 +164,28 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description (optional)
+                Composer (optional)
               </label>
               <input
                 type="text"
                 value={newPieceComposer}
                 onChange={(e) => setNewPieceComposer(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="e.g., Weekly team sync"
+                placeholder="e.g., J.S. Bach"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description (optional)
+              </label>
+              <input
+                type="text"
+                value={newPieceDescription}
+                onChange={(e) => setNewPieceDescription(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="e.g., Focus on articulation"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-400"
               />
             </div>
@@ -205,6 +227,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                 setIsAddingPiece(false);
                 setNewPieceTitle('');
                 setNewPieceComposer('');
+                setNewPieceDescription('');
                 setSelectedColor(getLastUsedColor()); // Reset to last used color
               }}
               className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
@@ -277,6 +300,15 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                     value={editComposer}
                     onChange={(e) => setEditComposer(e.target.value)}
                     onKeyPress={handleEditKeyPress}
+                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none mb-2"
+                    placeholder="Composer (optional)"
+                  />
+                  
+                  <input
+                    type="text"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    onKeyPress={handleEditKeyPress}
                     className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Description (optional)"
                   />
@@ -310,8 +342,14 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                   </h3>
                   
                   {piece.composer && (
-                    <p className="text-sm text-gray-400 line-clamp-1">
+                    <p className="text-xs text-blue-400 font-medium line-clamp-1 mb-1">
                       {piece.composer}
+                    </p>
+                  )}
+                  
+                  {piece.description && (
+                    <p className="text-sm text-gray-400 line-clamp-2">
+                      {piece.description}
                     </p>
                   )}
                 </>

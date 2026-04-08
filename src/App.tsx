@@ -9,6 +9,7 @@ export interface MusicalPiece {
   title: string;
   color: string;
   composer?: string;
+  description?: string;
 }
 
 export interface DaySchedule {
