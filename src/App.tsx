@@ -3,6 +3,8 @@ import { MaterialIcon } from './components/MaterialIcon';
 import { PieceManager } from './components/PieceManager';
 import { WeeklyCalendar } from './components/WeeklyCalendar';
 import { SettingsPanel } from './components/SettingsPanel';
+import { SharedPlanView } from './components/SharedPlanView';
+import { encodePlanToURL, decodePlanFromURL, isSharedView } from './utils/shareUtils';
 
 export interface MusicalPiece {
   id: string;
@@ -72,6 +74,9 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPieceManagerOpen, setIsPieceManagerOpen] = useState(false);
   const [openPieceManagerWithAddForm, setOpenPieceManagerWithAddForm] = useState(false);
+  const [isSharedPlan, setIsSharedPlan] = useState(false);
+  const [shareURL, setShareURL] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Test localStorage on component mount
   useEffect(() => {
@@ -94,8 +99,21 @@ function App() {
     console.log('=== END TEST ===');
   }, []);
 
-  // Load data from localStorage on mount
+  // Load data from localStorage on mount (or from shared URL)
   useEffect(() => {
+    // Check if this is a shared plan URL
+    if (isSharedView()) {
+      const sharedData = decodePlanFromURL();
+      if (sharedData) {
+        setPieces(sharedData.pieces);
+        setSchedule(sharedData.schedule);
+        setSettings(sharedData.settings);
+        setIsSharedPlan(true);
+        setIsInitialLoad(false);
+        return;
+      }
+    }
+
     try {
       console.log('Loading data from localStorage...');
       console.log('All localStorage keys:', Object.keys(localStorage));
@@ -192,9 +210,9 @@ function App() {
     }
   }, []);
 
-  // Save data to localStorage when state changes
+  // Save data to localStorage when state changes (skip in shared view)
   useEffect(() => {
-    if (!isInitialLoad) {
+    if (!isInitialLoad && !isSharedPlan) {
       try {
         console.log('Saving pieces to localStorage:', pieces.length, 'items');
         localStorage.setItem('planningMate_pieces', JSON.stringify(pieces));
@@ -203,10 +221,10 @@ function App() {
         alert('Failed to save data! Please check Brave privacy settings.');
       }
     }
-  }, [pieces, isInitialLoad]);
+  }, [pieces, isInitialLoad, isSharedPlan]);
 
   useEffect(() => {
-    if (!isInitialLoad) {
+    if (!isInitialLoad && !isSharedPlan) {
       try {
         console.log('Saving schedule to localStorage:', Object.keys(schedule).length, 'days');
         localStorage.setItem('planningMate_schedule', JSON.stringify(schedule));
@@ -215,10 +233,10 @@ function App() {
         alert('Failed to save data! Please check Brave privacy settings.');
       }
     }
-  }, [schedule, isInitialLoad]);
+  }, [schedule, isInitialLoad, isSharedPlan]);
 
   useEffect(() => {
-    if (!isInitialLoad) {
+    if (!isInitialLoad && !isSharedPlan) {
       try {
         console.log('Saving settings to localStorage:', settings);
         localStorage.setItem('planningMate_settings', JSON.stringify(settings));
@@ -227,7 +245,7 @@ function App() {
         alert('Failed to save data! Please check Brave privacy settings.');
       }
     }
-  }, [settings, isInitialLoad]);
+  }, [settings, isInitialLoad, isSharedPlan]);
 
   useEffect(() => {
     console.log('Current pieces state:', pieces);
@@ -327,6 +345,26 @@ function App() {
     alert('Data imported successfully!');
   };
 
+  const handleSharePlan = async () => {
+    const url = encodePlanToURL({ pieces, schedule, settings });
+    setShareURL(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // URL will still be shown in the modal
+    }
+  };
+
+  const handleExitSharedView = () => {
+    // Navigate to the clean URL — do NOT set isSharedPlan to false first,
+    // as that would trigger the save-to-localStorage effect with shared data.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('plan');
+    window.location.href = url.toString();
+  };
+
   // Manual data loading function for debugging
   const manualLoadData = () => {
     console.log('=== MANUAL DATA LOAD ===');
@@ -394,8 +432,41 @@ function App() {
   return (
     <ErrorBoundary>
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black font-['Roboto']">
+        {/* Shared Plan Banner */}
+        {isSharedPlan && (
+          <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <MaterialIcon icon="share" size={20} />
+              <span className="font-medium">You're viewing a shared plan</span>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleExitSharedView}
+                className="px-3 py-1.5 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
+              >
+                My Plan
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Settings and Repertoire Buttons */}
         <div className="fixed top-4 right-4 z-40 flex space-x-2">
+          {!isSharedPlan && (
+            <div className="relative group">
+              <button
+                onClick={handleSharePlan}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 p-3 rounded-lg shadow-lg transition-all duration-200 border border-gray-700 flex items-center justify-center"
+              >
+                <MaterialIcon icon="share" size={20} />
+              </button>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                Share Plan
+              </div>
+            </div>
+          )}
+          {!isSharedPlan && (
+            <>
           <div className="relative group">
             <button
               onClick={() => setIsPieceManagerOpen(true)}
@@ -418,12 +489,17 @@ function App() {
               Settings
             </div>
           </div>
+            </>
+          )}
         </div>
 
 
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-6">
+          {isSharedPlan ? (
+            <SharedPlanView schedule={schedule} settings={settings} />
+          ) : (
           <WeeklyCalendar
             pieces={pieces}
             schedule={schedule}
@@ -443,6 +519,7 @@ function App() {
               setIsPieceManagerOpen(true);
             }}
           />
+          )}
         </main>
 
         {/* Settings Modal */}
@@ -510,6 +587,67 @@ function App() {
                   onUpdatePiece={updatePiece}
                   openWithAddForm={openPieceManagerWithAddForm}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share URL Modal */}
+        {shareURL && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShareURL(null)}
+          >
+            <div 
+              className="bg-gray-800 rounded-lg shadow-xl max-w-lg w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <MaterialIcon icon="share" size={24} className="text-blue-400" />
+                  <h2 className="text-xl font-medium text-white">Share Plan</h2>
+                </div>
+                <button
+                  onClick={() => setShareURL(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <MaterialIcon icon="close" size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-400">
+                  Share your plan
+                </p>
+                <div className="flex items-stretch space-x-2">
+                  <input
+                    readOnly
+                    value={shareURL}
+                    className="flex-1 bg-gray-900 text-gray-300 text-sm p-3 rounded-lg border border-gray-600 font-mono truncate"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(shareURL);
+                        setShareCopied(true);
+                        setTimeout(() => setShareCopied(false), 2000);
+                      } catch { /* noop */ }
+                    }}
+                    className="px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap flex items-center space-x-2"
+                  >
+                    <MaterialIcon icon={shareCopied ? 'check' : 'content_copy'} size={16} />
+                    <span>{shareCopied ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                  <a
+                    href={shareURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center"
+                    title="Open in new tab"
+                  >
+                    <MaterialIcon icon="open_in_new" size={18} />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

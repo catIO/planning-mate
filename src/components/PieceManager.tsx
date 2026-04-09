@@ -249,8 +249,25 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
               {editingPieceId === piece.id ? (
                 // Edit Form
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-end space-x-2 mb-1">
+                    <button
+                      onClick={saveEdit}
+                      className="text-green-400 hover:text-green-300 transition-colors p-1 relative group"
+                      title="Save"
+                    >
+                      <MaterialIcon icon="check_circle" size={28} />
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Save</span>
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="text-gray-400 hover:text-gray-200 transition-colors p-1 relative group"
+                      title="Cancel"
+                    >
+                      <MaterialIcon icon="cancel" size={28} />
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Cancel</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center">
                       <div className="flex flex-wrap gap-1">
                         {PIECE_COLORS.map((color) => (
                           <button
@@ -265,25 +282,6 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                           />
                         ))}
                       </div>
-                    </div>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={saveEdit}
-                        className="text-green-500 hover:text-green-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="text-gray-500 hover:text-gray-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
                   </div>
                   
                   <input
