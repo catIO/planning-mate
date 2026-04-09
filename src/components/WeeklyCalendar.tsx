@@ -25,16 +25,11 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   onOpenPieceManager,
   onOpenPieceManagerWithAddForm
 }) => {
-  console.log('WeeklyCalendar received pieces:', pieces);
-  console.log('WeeklyCalendar received schedule:', schedule);
-  console.log('WeeklyCalendar pieces length:', pieces.length);
-  console.log('WeeklyCalendar schedule keys:', Object.keys(schedule));
-  
-  const [draggedPiece, setDraggedPiece] = useState<{ piece: MusicalPiece; fromDay?: number } | null>(null);
+  const [draggedPiece, setDraggedPiece] = useState<{ piece: MusicalPiece; fromDay?: number; fromIndex?: number } | null>(null);
   const [selectedDayForModal, setSelectedDayForModal] = useState<number | null>(null);
   const [draggedScheduledItem, setDraggedScheduledItem] = useState<{ piece: MusicalPiece; index: number } | null>(null);
-  const [dragOverScheduledIndex, setDragOverScheduledIndex] = useState<number | null>(null);
-  const dragOverDay = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<number | null>(null);
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -45,27 +40,43 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
     weekDays.push((startDay + i) % 7);
   }
 
-  const handleDragStart = (e: React.DragEvent, piece: MusicalPiece, fromDay?: number) => {
-    setDraggedPiece({ piece, fromDay });
+  const clearDragState = () => {
+    setDraggedPiece(null);
+    setDraggedScheduledItem(null);
+    setDragOverDay(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, piece: MusicalPiece, fromDay?: number, fromIndex?: number) => {
+    setDraggedPiece({ piece, fromDay, fromIndex });
     e.dataTransfer.effectAllowed = 'move';
+    // Use a small delay to ensure the drag image is created before any state changes that might affect the element
   };
 
   const handleDragOver = (e: React.DragEvent, dayIndex: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverDay.current !== dayIndex) {
-      dragOverDay.current = dayIndex;
+    
+    if (dragOverDay !== dayIndex) {
+      setDragOverDay(dayIndex);
+    }
+    
+    // If we're hovering the card itself, default to the end of the list
+    const dayPieces = schedule[dayIndex] || [];
+    if (dragOverIndex !== dayPieces.length) {
+      setDragOverIndex(dayPieces.length);
     }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    // Only clear if we're actually leaving the drop zone
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
+    // Only clear if we actually left the element, not just entered a child
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      dragOverDay.current = null;
+      setDragOverDay(null);
+      setDragOverIndex(null);
     }
   };
 
@@ -75,21 +86,53 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
     
     if (!draggedPiece) return;
 
-    if (draggedPiece.fromDay !== undefined) {
-      // Moving from one day to another
-      if (draggedPiece.fromDay !== dayIndex) {
-        onMovePiece(draggedPiece.fromDay, dayIndex, draggedPiece.piece);
+    const currentItems = schedule[dayIndex] || [];
+    // If dropped on the card background, use the end of the list
+    const dropIndex = dragOverIndex !== null ? dragOverIndex : currentItems.length;
+
+    executeReorder(dayIndex, dropIndex);
+  };
+
+  const executeReorder = (dayIndex: number, dropIndex: number) => {
+    if (!draggedPiece) return;
+
+    const currentToItems = schedule[dayIndex] || [];
+    
+    if (draggedPiece.fromDay === dayIndex && draggedPiece.fromIndex !== undefined) {
+      // Reordering within same day
+      const draggedIndex = draggedPiece.fromIndex;
+      if (draggedIndex === dropIndex) {
+        clearDragState();
+        return;
       }
+      
+      const newItems = [...currentToItems];
+      const [draggedItem] = newItems.splice(draggedIndex, 1);
+      
+      // Adjust drop index if we're moving something down
+      let adjustedDropIndex = dropIndex;
+      if (draggedIndex < dropIndex) {
+        adjustedDropIndex = Math.max(0, dropIndex - 1);
+      }
+      
+      newItems.splice(adjustedDropIndex, 0, draggedItem);
+      onUpdateSchedule(dayIndex, newItems);
+    } else if (draggedPiece.fromDay !== undefined) {
+      // Moving between days
+      const fromDayItems = (schedule[draggedPiece.fromDay] || []).filter((_, i) => i !== draggedPiece.fromIndex);
+      const toDayItems = [...currentToItems];
+      toDayItems.splice(dropIndex, 0, draggedPiece.piece);
+      
+      onUpdateSchedule(draggedPiece.fromDay, fromDayItems);
+      onUpdateSchedule(dayIndex, toDayItems);
     } else {
-      // Adding from piece library
-      onAddPieceToDay(dayIndex, draggedPiece.piece);
+      // Adding from repertoire
+      const toDayItems = [...currentToItems];
+      toDayItems.splice(dropIndex, 0, draggedPiece.piece);
+      onUpdateSchedule(dayIndex, toDayItems);
     }
     
-    // Clear drag state after a small delay to prevent visual glitches
-    setTimeout(() => {
-      setDraggedPiece(null);
-      dragOverDay.current = null;
-    }, 50);
+    setTimeout(clearDragState, 50);
   };
 
   const openDayModal = (dayIndex: number) => {
@@ -98,30 +141,20 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 
   const closeDayModal = () => {
     setSelectedDayForModal(null);
+    clearDragState();
   };
 
-  // Functions for reordering scheduled items in modal
   const handleScheduledDragStart = (e: React.DragEvent, piece: MusicalPiece, index: number) => {
     setDraggedScheduledItem({ piece, index });
+    setDraggedPiece({ piece, fromDay: selectedDayForModal!, fromIndex: index });
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleScheduledDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverScheduledIndex !== index) {
-      setDragOverScheduledIndex(index);
-    }
-  };
-
-  const handleScheduledDragLeave = (e: React.DragEvent) => {
-    // Only clear if we're actually leaving the drop zone
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDragOverScheduledIndex(null);
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
     }
   };
 
@@ -129,31 +162,32 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    if (!draggedScheduledItem || selectedDayForModal === null) return;
+    if (selectedDayForModal === null) return;
+    executeReorder(selectedDayForModal, dropIndex);
+  };
 
-    const currentItems = schedule[selectedDayForModal] || [];
-    const draggedIndex = draggedScheduledItem.index;
+  const handleGridItemDragOver = (e: React.DragEvent, dayIndex: number, itemIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
     
-    if (draggedIndex === dropIndex) return;
-
-    // Create new array with reordered items
-    const newItems = [...currentItems];
-    const [draggedItem] = newItems.splice(draggedIndex, 1);
-    newItems.splice(dropIndex, 0, draggedItem);
-
-    // Update the schedule with reordered items
-    onUpdateSchedule(selectedDayForModal, newItems);
+    if (dragOverDay !== dayIndex) {
+      setDragOverDay(dayIndex);
+    }
     
-    // Clear drag state after a small delay to prevent visual glitches
-    setTimeout(() => {
-      setDraggedScheduledItem(null);
-      setDragOverScheduledIndex(null);
-    }, 50);
+    if (dragOverIndex !== itemIndex) {
+      setDragOverIndex(itemIndex);
+    }
+  };
+
+  const handleGridItemDrop = (e: React.DragEvent, dayIndex: number, dropIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    executeReorder(dayIndex, dropIndex);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-medium text-white">Weekly Practice Schedule</h2>
@@ -161,7 +195,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
         </div>
       </div>
 
-      {/* Available Pieces */}
       {pieces.length > 0 ? (
         <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 cursor-pointer hover:bg-gray-750 transition-colors" onClick={onOpenPieceManager}>
           <div className="flex items-center justify-end mb-3">
@@ -169,7 +202,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
           </div>
           <div className="flex flex-wrap gap-2">
             {pieces.map((piece) => {
-              // Calculate how many times this piece appears in the schedule
               const usageCount = Object.values(schedule).reduce((total, dayPieces) => {
                 return total + dayPieces.filter((p: MusicalPiece) => p.id === piece.id).length;
               }, 0);
@@ -202,8 +234,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
             <MaterialIcon icon="library_music" size={48} className="text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-3">Your repertoire is empty</h3>
             <p className="text-gray-400 mb-6">
-              Add pieces, technical exercises, or practice items to your repertoire. 
-              You can then drag them to your weekly calendar to plan your practice sessions.
+              Add pieces to your repertoire then drag them to your calendar.
             </p>
             <button
               onClick={(e) => {
@@ -212,14 +243,13 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
               }}
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl"
             >
-              <MaterialIcon icon="add" size={20} className="mr-2 flex-shrink-0" />
+              <MaterialIcon icon="add" size={20} className="mr-2" />
               Add Your First Item
             </button>
           </div>
         </div>
       )}
 
-      {/* Calendar Grid */}
       <div 
         className="grid grid-cols-1 md:grid-cols-7 gap-4 weekly-calendar-grid"
         style={{ 
@@ -234,7 +264,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
             <div
               key={dayIndex}
               className={`bg-gray-800 rounded-lg shadow-sm border-2 transition-all duration-200 cursor-pointer ${
-                dragOverDay.current === dayIndex 
+                dragOverDay === dayIndex && dragOverIndex === dayPieces.length
                   ? 'border-blue-400 bg-blue-900/20' 
                   : 'border-gray-700 hover:border-gray-600'
               } ${isToday ? 'ring-2 ring-blue-500/50' : ''}`}
@@ -245,59 +275,60 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
             >
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-white">{dayNames[dayIndex]}</h3>
+                  <h3 className="font-medium text-white">
+                    {dayNames[dayIndex]}
+                    {isToday && <span className="ml-2 text-xs font-bold text-blue-400 uppercase tracking-wider">Today</span>}
+                  </h3>
                 </div>
                 
-                <div className="space-y-2">
-                  {dayPieces.map((piece, index) => {
-                    const isItemToday = dayIndex === new Date().getDay();
-                    
-                    return (
+                <div className="space-y-2 relative">
+                  {dayPieces.map((piece, index) => (
+                    <React.Fragment key={`${piece.id}-${index}`}>
+                      {dragOverDay === dayIndex && dragOverIndex === index && draggedPiece && (
+                         <div className="h-1 bg-blue-400 rounded-full opacity-75 my-1" />
+                      )}
+                      
                       <div
-                        key={`${piece.id}-${index}`}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, piece, dayIndex)}
-                        className={isItemToday 
-                          ? "relative pl-3 pr-2 py-2 rounded bg-gray-900/60 border border-gray-700/50 cursor-move hover:bg-gray-900/80 transition-all group shadow-sm"
-                          : "px-2 py-1 rounded text-xs font-medium text-white cursor-move hover:shadow-sm transition-all truncate"
+                        onDragStart={(e) => handleDragStart(e, piece, dayIndex, index)}
+                        onDragOver={(e) => handleGridItemDragOver(e, dayIndex, index)}
+                        onDrop={(e) => handleGridItemDrop(e, dayIndex, index)}
+                        className={isToday 
+                          ? `relative pl-3 pr-2 py-2 rounded bg-gray-900/60 border cursor-move hover:bg-gray-900/80 transition-all group shadow-sm ${
+                              dragOverDay === dayIndex && dragOverIndex === index ? 'border-blue-400 bg-blue-900/20' : 'border-gray-700/50'
+                            }`
+                          : `px-2 py-1 rounded text-xs font-medium text-white cursor-move hover:shadow-sm transition-all truncate border-2 ${
+                               dragOverDay === dayIndex && dragOverIndex === index ? 'border-blue-400' : 'border-transparent'
+                            }`
                         }
-                        style={isItemToday ? {} : { backgroundColor: piece.color }}
+                        style={isToday ? {} : { backgroundColor: piece.color }}
                       >
-                        {isItemToday ? (
+                        {isToday ? (
                           <>
-                            {/* Color accent bar */}
                             <div 
                               className="absolute left-0 top-0 bottom-0 w-1 rounded-l transition-all group-hover:w-1.5" 
                               style={{ backgroundColor: piece.color }}
-                            ></div>
-                            
-                            <div 
-                              className="text-base font-bold leading-tight"
-                              style={{ color: piece.color }}
-                            >
+                            />
+                            <div className="text-base font-bold leading-tight" style={{ color: piece.color }}>
                               {piece.title}
                             </div>
-                            
                             {piece.description && (
                               <div className="text-sm text-gray-300 opacity-90 mt-1.5 line-clamp-3 leading-relaxed">
                                 {piece.description}
                               </div>
                             )}
                           </>
-                        ) : (
-                          piece.title
-                        )}
+                        ) : piece.title}
                       </div>
-                    );
-                  })}
+                    </React.Fragment>
+                  ))}
                   
-                  {/* Drop indicator line */}
-                  {dragOverDay.current === dayIndex && draggedPiece && (
-                    <div className="h-0.5 bg-blue-400 rounded-full opacity-75"></div>
+                  {dragOverDay === dayIndex && dragOverIndex === dayPieces.length && draggedPiece && dayPieces.length > 0 && (
+                    <div className="h-1 bg-blue-400 rounded-full opacity-75 my-1" />
                   )}
-                  
+
                   {dayPieces.length === 0 && (
-                    <div className="text-xs text-gray-500 italic">
+                    <div className={`text-xs text-gray-500 italic py-2 rounded border border-dashed border-gray-700 flex items-center justify-center transition-colors ${dragOverDay === dayIndex ? 'bg-blue-900/10 border-blue-400/50' : ''}`}>
                       Practice!
                     </div>
                   )}
@@ -308,124 +339,91 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
         })}
       </div>
 
-      {/* Day Modal */}
       {selectedDayForModal !== null && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={closeDayModal}
-        >
-          <div 
-            className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={closeDayModal}>
+          <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h3 className="text-lg font-medium text-white">
                 {dayNames[selectedDayForModal]}
+                {selectedDayForModal === new Date().getDay() && <span className="ml-2 text-xs text-blue-400">TODAY</span>}
               </h3>
-              <button
-                onClick={closeDayModal}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
+              <button onClick={closeDayModal} className="text-gray-400 hover:text-white transition-colors">
                 <MaterialIcon icon="close" size={20} />
               </button>
             </div>
             
             <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {/* Scheduled Items Section */}
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Scheduled Items</h4>
-                <div className="space-y-3">
+                <div className="space-y-3 relative">
                   {(schedule[selectedDayForModal] || []).map((piece, index) => (
-                  <React.Fragment key={`${piece.id}-${index}`}>
-                    {/* Drop indicator line above item */}
-                    {dragOverScheduledIndex === index && draggedScheduledItem && (
-                      <div className="h-1 bg-blue-400 rounded-full opacity-75"></div>
-                    )}
-                    
-                    <div
-                      draggable
-                      onDragStart={(e) => handleScheduledDragStart(e, piece, index)}
-                      onDragOver={(e) => handleScheduledDragOver(e, index)}
-                      onDragLeave={handleScheduledDragLeave}
-                      onDrop={(e) => handleScheduledDrop(e, index)}
-                      className={`relative pl-4 pr-3 py-3 rounded-lg cursor-move transition-all bg-gray-700/30 border ${
-                        dragOverScheduledIndex === index ? 'border-blue-400 bg-blue-900/20 shadow-lg' : 'border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      {/* Color accent bar */}
-                      <div 
-                        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l" 
-                        style={{ backgroundColor: piece.color }}
-                      ></div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-bold text-base" style={{ color: piece.color }}>{piece.title}</div>
-                          {piece.composer && (
-                            <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>
-                          )}
-                          {piece.description && (
-                            <div className="text-sm text-gray-300 mt-2 leading-relaxed">{piece.description}</div>
-                          )}
+                    <React.Fragment key={`${piece.id}-${index}`}>
+                      {dragOverIndex === index && draggedPiece && (
+                         <div className="h-1 bg-blue-400 rounded-full opacity-75 my-1" />
+                      )}
+                      <div
+                        draggable
+                        onDragStart={(e) => handleScheduledDragStart(e, piece, index)}
+                        onDragOver={(e) => handleScheduledDragOver(e, index)}
+                        onDrop={(e) => handleScheduledDrop(e, index)}
+                        className={`relative pl-4 pr-3 py-3 rounded-lg cursor-move transition-all bg-gray-700/30 border ${
+                          dragOverIndex === index ? 'border-blue-400 bg-blue-900/20 shadow-lg' : 'border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l" style={{ backgroundColor: piece.color }} />
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-bold text-base" style={{ color: piece.color }}>{piece.title}</div>
+                            {piece.composer && <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>}
+                            {piece.description && <div className="text-sm text-gray-300 mt-2 leading-relaxed">{piece.description}</div>}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemovePieceFromDay(selectedDayForModal, piece.id);
+                            }}
+                            className="ml-4 p-1 text-gray-500 hover:text-red-400 transition-colors rounded-full hover:bg-gray-800"
+                          >
+                            <MaterialIcon icon="close" size={18} />
+                          </button>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemovePieceFromDay(selectedDayForModal, piece.id);
-                          }}
-                          className="ml-4 p-1 text-gray-500 hover:text-red-400 transition-colors rounded-full hover:bg-gray-800"
-                        >
-                          <MaterialIcon icon="close" size={18} />
-                        </button>
                       </div>
+                    </React.Fragment>
+                  ))}
+                  
+                  {dragOverIndex === (schedule[selectedDayForModal] || []).length && draggedPiece && (schedule[selectedDayForModal] || []).length > 0 && (
+                    <div className="h-1 bg-blue-400 rounded-full opacity-75 my-1" />
+                  )}
+                  
+                  {(schedule[selectedDayForModal] || []).length === 0 && (
+                    <div className="text-center py-8 text-gray-400 border border-dashed border-gray-700 rounded-lg">
+                      <p>No items scheduled for this day</p>
                     </div>
-                  </React.Fragment>
-                ))}
-                
-                {/* Drop indicator at the end if dragging to last position */}
-                {dragOverScheduledIndex === (schedule[selectedDayForModal] || []).length && draggedScheduledItem && (
-                  <div className="h-1 bg-blue-400 rounded-full opacity-75"></div>
-                )}
-                
-                {(schedule[selectedDayForModal] || []).length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>No items scheduled for this day</p>
-                    <p className="text-sm mt-1">Drag items from above to schedule them</p>
-                  </div>
-                )}
+                  )}
                 </div>
               </div>
 
-              {/* Add Items Section */}
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Add Items</h4>
                 <div className="space-y-2">
                   {pieces
-                    .filter(piece => !(schedule[selectedDayForModal] || []).some(scheduledPiece => scheduledPiece.id === piece.id))
+                    .filter(piece => !(schedule[selectedDayForModal] || []).some(p => p.id === piece.id))
                     .map((piece) => (
-                    <button
-                      key={piece.id}
-                      onClick={() => onAddPieceToDay(selectedDayForModal, piece)}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg border border-gray-600 hover:border-gray-500 hover:bg-gray-700 transition-all text-left"
-                    >
-                      <div 
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: piece.color }}
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-white">{piece.title}</div>
-                        <div className="flex flex-col">
-                          {piece.composer && (
-                            <div className="text-xs text-blue-400">{piece.composer}</div>
-                          )}
-                          {piece.description && (
-                            <div className="text-sm text-gray-400">{piece.description}</div>
-                          )}
+                      <button
+                        key={piece.id}
+                        onClick={() => onAddPieceToDay(selectedDayForModal, piece)}
+                        className="group w-full flex items-center space-x-3 p-3 rounded-lg border border-gray-600 hover:border-gray-500 hover:bg-gray-700 transition-all text-left"
+                      >
+                        <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: piece.color }} />
+                        <div className="flex-1">
+                          <div className="font-medium text-white">{piece.title}</div>
+                          {piece.composer && <div className="text-xs text-blue-400">{piece.composer}</div>}
                         </div>
-                      </div>
-                      <div className="text-gray-500 text-sm">+</div>
-                    </button>
-                  ))}
+                        <div className="text-gray-400 group-hover:text-white transition-colors">
+                          <MaterialIcon icon="add" size={24} />
+                        </div>
+                      </button>
+                    ))}
                 </div>
               </div>
             </div>
