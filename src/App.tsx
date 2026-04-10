@@ -507,6 +507,7 @@ function App() {
             onAddPieceToDay={addPieceToDay}
             onRemovePieceFromDay={removePieceFromDay}
             onMovePiece={movePiece}
+            onUpdatePiece={updatePiece}
             onUpdateSchedule={(dayIndex, items) => {
               setSchedule(prev => ({
                 ...prev,

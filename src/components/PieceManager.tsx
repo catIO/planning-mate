@@ -55,6 +55,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
   const [editComposer, setEditComposer] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Load last used color on component mount
   useEffect(() => {
@@ -180,13 +181,12 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description (optional)
               </label>
-              <input
-                type="text"
+              <textarea
                 value={newPieceDescription}
                 onChange={(e) => setNewPieceDescription(e.target.value)}
-                onKeyPress={handleKeyPress}
                 placeholder="e.g., Focus on articulation"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-400"
+                rows={3}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-400 resize-none"
               />
             </div>
 
@@ -249,24 +249,6 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
               {editingPieceId === piece.id ? (
                 // Edit Form
                 <div className="space-y-3">
-                  <div className="flex items-center justify-end space-x-2 mb-1">
-                    <button
-                      onClick={saveEdit}
-                      className="text-green-400 hover:text-green-300 transition-colors p-1 relative group"
-                      title="Save"
-                    >
-                      <MaterialIcon icon="check_circle" size={28} />
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Save</span>
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="text-gray-400 hover:text-gray-200 transition-colors p-1 relative group"
-                      title="Cancel"
-                    >
-                      <MaterialIcon icon="cancel" size={28} />
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Cancel</span>
-                    </button>
-                  </div>
                   <div className="flex items-center">
                       <div className="flex flex-wrap gap-1">
                         {PIECE_COLORS.map((color) => (
@@ -302,14 +284,21 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                     placeholder="Composer (optional)"
                   />
                   
-                  <input
-                    type="text"
+                  <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    onKeyPress={handleEditKeyPress}
-                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none"
+                    rows={3}
+                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                     placeholder="Description (optional)"
                   />
+                  <div className="flex justify-end space-x-2">
+                    <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-200 transition-colors p-1" title="Cancel">
+                      <MaterialIcon icon="cancel" size={24} />
+                    </button>
+                    <button onClick={saveEdit} className="text-white hover:text-gray-200 transition-colors p-1" title="Save">
+                      <MaterialIcon icon="check_circle" size={24} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 // Display Mode
@@ -326,12 +315,33 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                       >
                         <MaterialIcon icon="edit" size={16} />
                       </button>
-                      <button
-                        onClick={() => onDeletePiece(piece.id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
-                      >
-                        <MaterialIcon icon="delete" size={16} />
-                      </button>
+                      {confirmDeleteId === piece.id ? (
+                        <div className="flex items-center space-x-1 bg-red-900/40 border border-red-700/50 rounded px-2 py-0.5">
+                          <span className="text-xs text-red-300">Delete?</span>
+                          <button
+                            onClick={() => {
+                              onDeletePiece(piece.id);
+                              setConfirmDeleteId(null);
+                            }}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <MaterialIcon icon="check" size={16} />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-gray-400 hover:text-gray-200 transition-colors"
+                          >
+                            <MaterialIcon icon="close" size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(piece.id)}
+                          className="text-gray-500 hover:text-red-400 transition-colors"
+                        >
+                          <MaterialIcon icon="delete" size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   

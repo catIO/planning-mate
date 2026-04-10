@@ -1,6 +1,32 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MaterialIcon } from './MaterialIcon';
 import { MusicalPiece, DaySchedule, AppSettings } from '../App';
+
+const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+const loadCompletedItems = (): Set<string> => {
+  try {
+    const stored = localStorage.getItem('planningMate_completed');
+    if (!stored) return new Set();
+    const data = JSON.parse(stored);
+    if (data.date === getTodayKey()) {
+      return new Set(data.ids as string[]);
+    }
+    localStorage.removeItem('planningMate_completed');
+    return new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const saveCompletedItems = (ids: Set<string>) => {
+  try {
+    localStorage.setItem('planningMate_completed', JSON.stringify({
+      date: getTodayKey(),
+      ids: Array.from(ids)
+    }));
+  } catch { /* noop */ }
+};
 
 interface WeeklyCalendarProps {
   pieces: MusicalPiece[];
@@ -10,6 +36,7 @@ interface WeeklyCalendarProps {
   onRemovePieceFromDay: (dayIndex: number, pieceId: string) => void;
   onMovePiece: (fromDay: number, toDay: number, piece: MusicalPiece) => void;
   onUpdateSchedule: (dayIndex: number, items: MusicalPiece[]) => void;
+  onUpdatePiece: (pieceId: string, updatedPiece: Partial<MusicalPiece>) => void;
   onOpenPieceManager: () => void;
   onOpenPieceManagerWithAddForm: () => void;
 }
@@ -22,6 +49,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   onRemovePieceFromDay,
   onMovePiece,
   onUpdateSchedule,
+  onUpdatePiece,
   onOpenPieceManager,
   onOpenPieceManagerWithAddForm
 }) => {
@@ -30,6 +58,27 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   const [draggedScheduledItem, setDraggedScheduledItem] = useState<{ piece: MusicalPiece; index: number } | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
+  const [completedItems, setCompletedItems] = useState<Set<string>>(loadCompletedItems);
+  const [editingModalPieceId, setEditingModalPieceId] = useState<string | null>(null);
+  const [editModalTitle, setEditModalTitle] = useState('');
+  const [editModalComposer, setEditModalComposer] = useState('');
+  const [editModalDescription, setEditModalDescription] = useState('');
+
+  useEffect(() => {
+    saveCompletedItems(completedItems);
+  }, [completedItems]);
+
+  const toggleCompleted = (pieceId: string) => {
+    setCompletedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(pieceId)) {
+        next.delete(pieceId);
+      } else {
+        next.add(pieceId);
+      }
+      return next;
+    });
+  };
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -141,7 +190,30 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 
   const closeDayModal = () => {
     setSelectedDayForModal(null);
+    setEditingModalPieceId(null);
     clearDragState();
+  };
+
+  const startModalEdit = (piece: MusicalPiece) => {
+    setEditingModalPieceId(piece.id);
+    setEditModalTitle(piece.title);
+    setEditModalComposer(piece.composer || '');
+    setEditModalDescription(piece.description || '');
+  };
+
+  const saveModalEdit = () => {
+    if (editingModalPieceId && editModalTitle.trim()) {
+      onUpdatePiece(editingModalPieceId, {
+        title: editModalTitle.trim(),
+        composer: editModalComposer.trim() || undefined,
+        description: editModalDescription.trim() || undefined,
+      });
+      setEditingModalPieceId(null);
+    }
+  };
+
+  const cancelModalEdit = () => {
+    setEditingModalPieceId(null);
   };
 
   const handleScheduledDragStart = (e: React.DragEvent, piece: MusicalPiece, index: number) => {
@@ -277,7 +349,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-medium text-white">
                     {dayNames[dayIndex]}
-                    {isToday && <span className="ml-2 text-xs font-bold text-blue-400 uppercase tracking-wider">Today</span>}
                   </h3>
                 </div>
                 
@@ -309,14 +380,30 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                               className="absolute left-0 top-0 bottom-0 w-1 rounded-l transition-all group-hover:w-1.5" 
                               style={{ backgroundColor: piece.color }}
                             />
-                            <div className="text-base font-bold leading-tight" style={{ color: piece.color }}>
-                              {piece.title}
-                            </div>
-                            {piece.description && (
-                              <div className="text-sm text-gray-300 opacity-90 mt-1.5 line-clamp-3 leading-relaxed">
-                                {piece.description}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                toggleCompleted(piece.id);
+                              }}
+                              className="absolute top-1.5 right-1.5 flex-shrink-0 transition-colors z-10"
+                            >
+                              <MaterialIcon
+                                icon={completedItems.has(piece.id) ? 'check_circle' : 'radio_button_unchecked'}
+                                size={20}
+                                className={completedItems.has(piece.id) ? 'text-white' : 'text-gray-500 hover:text-gray-300'}
+                              />
+                            </button>
+                            <div className={completedItems.has(piece.id) ? 'opacity-50 pr-6' : 'pr-6'}>
+                              <div className={`text-base font-bold leading-tight ${completedItems.has(piece.id) ? 'line-through' : ''}`} style={{ color: piece.color }}>
+                                {piece.title}
                               </div>
-                            )}
+                              {piece.description && (
+                                <div className="text-sm text-gray-300 opacity-90 mt-1.5 line-clamp-3 leading-relaxed">
+                                  {piece.description}
+                                </div>
+                              )}
+                            </div>
                           </>
                         ) : piece.title}
                       </div>
@@ -345,7 +432,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h3 className="text-lg font-medium text-white">
                 {dayNames[selectedDayForModal]}
-                {selectedDayForModal === new Date().getDay() && <span className="ml-2 text-xs text-blue-400">TODAY</span>}
+
               </h3>
               <button onClick={closeDayModal} className="text-gray-400 hover:text-white transition-colors">
                 <MaterialIcon icon="close" size={20} />
@@ -371,22 +458,71 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                         }`}
                       >
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l" style={{ backgroundColor: piece.color }} />
+                        {editingModalPieceId === piece.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editModalTitle}
+                              onChange={(e) => setEditModalTitle(e.target.value)}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none"
+                              placeholder="Title"
+                              autoFocus
+                              onKeyDown={(e) => { if (e.key === 'Enter') saveModalEdit(); if (e.key === 'Escape') cancelModalEdit(); }}
+                            />
+                            <input
+                              type="text"
+                              value={editModalComposer}
+                              onChange={(e) => setEditModalComposer(e.target.value)}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none"
+                              placeholder="Composer (optional)"
+                              onKeyDown={(e) => { if (e.key === 'Enter') saveModalEdit(); if (e.key === 'Escape') cancelModalEdit(); }}
+                            />
+                            <textarea
+                              value={editModalDescription}
+                              onChange={(e) => setEditModalDescription(e.target.value)}
+                              rows={3}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                              placeholder="Description (optional)"
+                              onKeyDown={(e) => { if (e.key === 'Escape') cancelModalEdit(); }}
+                            />
+                            <div className="flex justify-end space-x-2">
+                              <button onClick={cancelModalEdit} className="text-gray-400 hover:text-gray-200 transition-colors p-1 relative group" title="Cancel">
+                                <MaterialIcon icon="cancel" size={24} />
+                              </button>
+                              <button onClick={saveModalEdit} className="text-white hover:text-gray-200 transition-colors p-1 relative group" title="Save">
+                                <MaterialIcon icon="check_circle" size={24} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="font-bold text-base" style={{ color: piece.color }}>{piece.title}</div>
                             {piece.composer && <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>}
                             {piece.description && <div className="text-sm text-gray-300 mt-2 leading-relaxed">{piece.description}</div>}
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRemovePieceFromDay(selectedDayForModal, piece.id);
-                            }}
-                            className="ml-4 p-1 text-gray-500 hover:text-red-400 transition-colors rounded-full hover:bg-gray-800"
-                          >
-                            <MaterialIcon icon="close" size={18} />
-                          </button>
+                          <div className="flex items-center ml-2 space-x-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startModalEdit(piece);
+                              }}
+                              className="p-1 text-gray-500 hover:text-blue-400 transition-colors rounded-full hover:bg-gray-800"
+                            >
+                              <MaterialIcon icon="edit" size={18} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRemovePieceFromDay(selectedDayForModal, piece.id);
+                              }}
+                              className="p-1 text-gray-500 hover:text-red-400 transition-colors rounded-full hover:bg-gray-800"
+                            >
+                              <MaterialIcon icon="close" size={18} />
+                            </button>
+                          </div>
                         </div>
+                        )}
                       </div>
                     </React.Fragment>
                   ))}
