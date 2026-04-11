@@ -55,7 +55,7 @@ export const SharedPlanView: React.FC<SharedPlanViewProps> = ({ schedule, settin
                       <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>
                     )}
                     {piece.description && (
-                      <div className="text-sm text-gray-300 mt-1.5 leading-relaxed">{piece.description}</div>
+                      <div className="text-sm text-gray-300 mt-1.5 leading-relaxed whitespace-pre-wrap">{piece.description}</div>
                     )}
                   </div>
                 ))

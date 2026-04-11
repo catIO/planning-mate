@@ -356,7 +356,7 @@ export const PieceManager: React.FC<PieceManagerProps> = ({
                   )}
                   
                   {piece.description && (
-                    <p className="text-sm text-gray-400 line-clamp-2">
+                    <p className="text-sm text-gray-400 whitespace-pre-wrap">
                       {piece.description}
                     </p>
                   )}

@@ -399,7 +399,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                                 {piece.title}
                               </div>
                               {piece.description && (
-                                <div className="text-sm text-gray-300 opacity-90 mt-1.5 line-clamp-3 leading-relaxed">
+                                <div className="text-sm text-gray-300 opacity-90 mt-1.5 leading-relaxed whitespace-pre-wrap">
                                   {piece.description}
                                 </div>
                               )}
@@ -499,7 +499,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                           <div className="flex-1">
                             <div className="font-bold text-base" style={{ color: piece.color }}>{piece.title}</div>
                             {piece.composer && <div className="text-xs text-gray-400 font-medium italic mt-0.5">{piece.composer}</div>}
-                            {piece.description && <div className="text-sm text-gray-300 mt-2 leading-relaxed">{piece.description}</div>}
+                            {piece.description && <div className="text-sm text-gray-300 mt-2 leading-relaxed whitespace-pre-wrap">{piece.description}</div>}
                           </div>
                           <div className="flex items-center ml-2 space-x-1">
                             <button
