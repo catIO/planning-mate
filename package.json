@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,9 +13,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@netlify/blobs": "^10.7.4",
     "@types/qrcode": "^1.5.5",
     "lucide-react": "^0.344.0",
     "lz-string": "^1.5.0",
+    "nanoid": "^5.1.7",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

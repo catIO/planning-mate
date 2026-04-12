@@ -9,6 +9,8 @@ interface SettingsPanelProps {
   pieces: any[];
   schedule: any;
   onImportData?: (data: { pieces: any[]; schedule: any; settings: AppSettings }) => void;
+  syncKey?: string | null;
+  onUpdateSyncKey?: (key: string) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -17,12 +19,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onClearOldData,
   pieces,
   schedule,
-  onImportData
+  onImportData,
+  syncKey,
+  onUpdateSyncKey
 }) => {
   const [showCopyData, setShowCopyData] = useState(false);
   const [copyDataText, setCopyDataText] = useState<string>('');
   const [importError, setImportError] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const [isEditingSyncKey, setIsEditingSyncKey] = useState(false);
+  const [syncKeyInputValue, setSyncKeyInputValue] = useState(syncKey || '');
+  const [syncKeyCopySuccess, setSyncKeyCopySuccess] = useState(false);
 
 
 
@@ -98,6 +105,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       setImportError('Error reading clipboard. Please try again.');
     });
   };
+
+  const handleSyncKeyUpdate = () => {
+    if (onUpdateSyncKey && syncKeyInputValue.trim()) {
+      onUpdateSyncKey(syncKeyInputValue.trim());
+      setIsEditingSyncKey(false);
+    }
+  };
+
+  const copySyncKey = async () => {
+    if (syncKey) {
+      try {
+        await navigator.clipboard.writeText(syncKey);
+        setSyncKeyCopySuccess(true);
+        setTimeout(() => setSyncKeyCopySuccess(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy sync key:', err);
+      }
+    }
+  };
+
   const handleStartDayChange = (startDay: number) => {
     onUpdateSettings({ ...settings, startDay });
   };
@@ -150,6 +177,89 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="font-medium">Current Day ({['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]})</div>
               </div>
             </button>
+          </div>
+        </div>
+
+        {/* Sync Identity (Live Plans) */}
+        <div className="p-6">
+          <h3 className="text-lg font-medium text-white mb-4">Sync Identity (Live Plans)</h3>
+          <p className="text-sm text-gray-400 mb-4">
+            Your Sync Key allows you to maintain a permanent "Live Plan" URL and sync your data across devices.
+          </p>
+          
+          <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Sync Key</label>
+              {!isEditingSyncKey && (
+                <button
+                  onClick={() => {
+                    setSyncKeyInputValue(syncKey || '');
+                    setIsEditingSyncKey(true);
+                  }}
+                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center space-x-1"
+                >
+                  <MaterialIcon icon="edit" size={14} />
+                  <span>{syncKey ? 'Change Key' : 'Add Key'}</span>
+                </button>
+              )}
+            </div>
+
+            {isEditingSyncKey ? (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={syncKeyInputValue}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSyncKeyUpdate()}
+                  onChange={(e) => setSyncKeyInputValue(e.target.value)}
+                  placeholder="Enter your sync key (e.g., mate-123456)"
+                  className="w-full bg-gray-800 text-white p-3 rounded-lg border border-gray-600 focus:border-blue-500 outline-none transition-colors"
+                />
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSyncKeyUpdate}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Save Key
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingSyncKey(false);
+                      setSyncKeyInputValue(syncKey || '');
+                    }}
+                    className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500 italic">
+                  Warning: Changing this key will change your permanent sharing URL.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <div className="flex-1 bg-gray-800 px-4 py-3 rounded-lg font-mono text-sm text-blue-400 border border-gray-700">
+                  {syncKey || 'Not generated yet'}
+                </div>
+                {syncKey && (
+                  <button
+                    onClick={copySyncKey}
+                    className={`p-3 rounded-lg border transition-all ${
+                      syncKeyCopySuccess 
+                        ? 'bg-green-900/20 border-green-700 text-green-400' 
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                    }`}
+                    title="Copy Sync Key"
+                  >
+                    <MaterialIcon icon={syncKeyCopySuccess ? 'check' : 'content_copy'} size={20} />
+                  </button>
+                )}
+              </div>
+            )}
+            
+            <p className="text-[11px] text-gray-500 mt-3">
+              To sync with another device, copy this key and paste it into the settings on that device.
+            </p>
           </div>
         </div>
 

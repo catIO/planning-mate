@@ -10,18 +10,21 @@ export const SharedPlanView: React.FC<SharedPlanViewProps> = ({ schedule, settin
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   const weekDays: number[] = [];
-  const startDay = settings.startDay === -1 ? new Date().getDay() : settings.startDay;
+  const startDay = new Date().getDay();
   for (let i = 0; i < 7; i++) {
     weekDays.push((startDay + i) % 7);
   }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-      <h2 className="text-2xl font-medium text-white mb-2">Weekly Practice Schedule</h2>
+      <div>
+        <h2 className="text-2xl font-medium text-white">Weekly Practice Schedule</h2>
+        <p className="text-gray-400 uppercase text-xs tracking-widest mt-1 opacity-70">Tempus fugit</p>
+      </div>
 
-      {weekDays.map((dayIndex) => {
+      {weekDays.map((dayIndex, index) => {
         const dayPieces = schedule[dayIndex] || [];
-        const isToday = dayIndex === new Date().getDay();
+        const isToday = index === 0; // The first item is always today now
 
         return (
           <div
@@ -32,9 +35,6 @@ export const SharedPlanView: React.FC<SharedPlanViewProps> = ({ schedule, settin
               <h3 className="font-semibold text-white text-lg">
                 {dayNames[dayIndex]}
               </h3>
-              {isToday && (
-                <span className="ml-2 text-xs font-bold text-blue-400 uppercase tracking-wider">Today</span>
-              )}
             </div>
 
             <div className="p-4 space-y-2">
